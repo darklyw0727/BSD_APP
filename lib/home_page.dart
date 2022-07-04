@@ -36,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   int bsdWarningL = 0;
   int bsdWarningR = 0;
   bool casWarning = false;
+  bool sysRunLight = false;
 
   //藍芽資料處理
   //region
@@ -48,18 +49,6 @@ class _HomePageState extends State<HomePage> {
   bool emaDoneR = false;
   bool emaToStringR = false;
   String emaR = '';
-  var mySpeedBuffer = []; //速度
-  bool mySpeedDone = false;
-  bool mySpeedToString = false;
-  String mySpeed = '';
-  var longBuffer = []; //經度
-  bool longDone = false;
-  bool longToString = false;
-  String longitude = '';
-  var latBuffer = []; //緯度
-  bool latDone = false;
-  bool latToString = false;
-  String latitude = '';
   var emaBufferF = []; //emaF
   bool emaDoneF = false;
   bool emaToStringF = false;
@@ -132,6 +121,18 @@ class _HomePageState extends State<HomePage> {
   bool tFDone = false;
   bool tFToString = false;
   String tF = '';
+  var mySpeedBuffer = []; //速度
+  bool mySpeedDone = false;
+  bool mySpeedToString = false;
+  String mySpeed = '';
+  var longBuffer = []; //經度
+  bool longDone = false;
+  bool longToString = false;
+  String longitude = '';
+  var latBuffer = []; //緯度
+  bool latDone = false;
+  bool latToString = false;
+  String latitude = '';
   //endregion
 
   //紅黑顏色變換
@@ -140,6 +141,14 @@ class _HomePageState extends State<HomePage> {
       return Colors.red;
     }else{
       return Colors.black26;
+    }
+  }
+
+  Color sysRunColor(bool warning){
+    if(warning == true){
+      return Colors.blueAccent;
+    }else{
+      return Colors.grey;
     }
   }
 
@@ -330,8 +339,8 @@ class _HomePageState extends State<HomePage> {
                     child: Container( //文字
                       alignment: Alignment.center,
                       width: 100,
-                      child: Text(mySpeed,style: TextStyle(
-                        fontSize: 45,
+                      child: Text(/*mySpeed*/'38.075',style: TextStyle(
+                        fontSize: 30,
                         fontWeight: FontWeight.bold,
                       ),),
                     ),
@@ -353,7 +362,7 @@ class _HomePageState extends State<HomePage> {
                         alignment: Alignment.centerLeft,
                         width: 100,
                         height: 50,
-                        child: Text(longitude),
+                        child: Text(/*longitude*/'2342.19442'),
                       ),
                     ],
                   ),
@@ -374,7 +383,7 @@ class _HomePageState extends State<HomePage> {
                         alignment: Alignment.centerLeft,
                         width: 100,
                         height: 50,
-                        child: Text(latitude),
+                        child: Text(/*latitude*/'12025.82153'),
                       ),
                     ],
                   ),
@@ -489,6 +498,21 @@ class _HomePageState extends State<HomePage> {
                     print('NoSelected !');
                   }
                 },
+              )
+          ),
+          Positioned(
+              top: 120,
+              right: 20,
+              child: Container(
+                alignment: Alignment.center,
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: sysRunColor(sysRunLight)
+                  ,
+                  shape: BoxShape.circle,
+                ),
+
               )
           ),
           //CAS其餘資訊
@@ -1264,7 +1288,7 @@ class _HomePageState extends State<HomePage> {
     });
 
     //資料轉換
-    if(emaDoneL && !emaToStringL){ //資料接收轉換 且 尚未完成轉換
+    if(emaDoneL && !emaToStringL){ //資料接收完成 且 尚未完成轉換
       Uint8List emaLL = Uint8List(emaBufferL.length); //依據buffer建立暫存
       //buffer資料存入暫存
       for(int i=0;i<emaBufferL.length;i++){
@@ -1301,9 +1325,10 @@ class _HomePageState extends State<HomePage> {
     }
     if(btWarningDone && !btWarningToStatus){
       setState(() {
-        bsdWarningL = btWarningBuffer[0]==50?2:btWarningBuffer[0]==49?1:0;
-        bsdWarningR = btWarningBuffer[1]==50?2:btWarningBuffer[1]==49?1:0;
-        casWarning = btWarningBuffer[2]==49?true:false;
+        sysRunLight = btWarningBuffer[0]==49?true:false; //運行指示燈
+        bsdWarningL = btWarningBuffer[1]==50?2:btWarningBuffer[0]==49?1:0;
+        bsdWarningR = btWarningBuffer[2]==50?2:btWarningBuffer[1]==49?1:0;
+        casWarning = btWarningBuffer[3]==49?true:false;
       });
       print('**Warning = ' + bsdWarningL.toString() + '/' + bsdWarningR.toString() + '/' + casWarning.toString() + '(' + btWarningBuffer[0].toString() + '/' + btWarningBuffer[1].toString() + '/' + btWarningBuffer[2].toString() + ')');
     }

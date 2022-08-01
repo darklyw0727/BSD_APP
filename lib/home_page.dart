@@ -133,14 +133,24 @@ class _HomePageState extends State<HomePage> {
   bool latDone = false;
   bool latToString = false;
   String latitude = '';
+  var btSysBuffer = []; //ESP32系統運行
+  bool btSysDone = false;
+  bool btSysToStauts = false;
+  String btSys = '';
   //endregion
 
   //紅黑顏色變換
-  Color changeColor(bool warning){
-    if(warning == true){
+  Color changeColor(bool warning,int warning2){
+    if(warning2 == 1){
       return Colors.red;
-    }else{
+    }else if(warning2 == 0){
       return Colors.black26;
+    }else {
+      if(warning == true){
+        return Colors.red;
+      }else{
+        return Colors.black26;
+      }
     }
   }
 
@@ -174,26 +184,24 @@ class _HomePageState extends State<HomePage> {
 
     //0.5 second timer
     Timer.periodic(Duration(milliseconds: 500), (timer) {
-      if((bsdWarningR==1)||(bsdWarningL==1)) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);
-
-      if(bsdWarningL == 1){
+      if(bsdWarningL == 2){
         setState(() {
           leftBackground = !leftBackground;
         });
-      }else if(bsdWarningL == 0){
+      }/*else if(bsdWarningL == 0){
         setState(() {
           leftBackground = false;
         });
-      }
-      if(bsdWarningR == 1){
+      }*/
+      if(bsdWarningR == 2){
         setState(() {
           rightBackground = !rightBackground;
         });
-      }else if(bsdWarningR == 0){
+      }/*else if(bsdWarningR == 0){
         setState(() {
           rightBackground = false;
         });
-      }
+      }*/
 
       /*if(s05Button){
         setState(() {
@@ -201,12 +209,12 @@ class _HomePageState extends State<HomePage> {
         });
       }
       if(left == true) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);*/
+      if((bsdWarningL==2)&&(leftBackground)&&(!casWarning)) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);
+      else if((bsdWarningR==2)&&(rightBackground)&&(!casWarning)) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);
     });
 
     //0.1 second timer
-    Timer.periodic(Duration(milliseconds: 200), (timer) {
-      if((casWarning==true)||(bsdWarningL==2)||(bsdWarningR==2)) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);
-
+    Timer.periodic(Duration(milliseconds: 100), (timer) {
       if(casWarning){
         setState(() {
           frontBackground = !frontBackground;
@@ -216,7 +224,7 @@ class _HomePageState extends State<HomePage> {
           frontBackground = false;
         });
       }
-      if(bsdWarningL == 2){
+      /*if(bsdWarningL == 2){
         setState(() {
           leftBackground = !leftBackground;
         });
@@ -233,7 +241,7 @@ class _HomePageState extends State<HomePage> {
         setState(() {
           rightBackground = false;
         });
-      }
+      }*/
 
       /*if(s01Button){
         setState(() {
@@ -241,6 +249,7 @@ class _HomePageState extends State<HomePage> {
         });
       }
       if(right == true) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);*/
+      if((casWarning==true)&&(frontBackground)) audioCache.play('BSD_alarm.wav', mode: PlayerMode.LOW_LATENCY);
     });
   }
 
@@ -269,7 +278,7 @@ class _HomePageState extends State<HomePage> {
               Flexible(
                   flex:4,
                   child:Container(
-                    color:changeColor(frontBackground),
+                    color:changeColor(frontBackground,2),
                   )
               ),
               //中間
@@ -289,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                       Flexible(
                           flex:1,
                           child:Container(
-                            color:changeColor(leftBackground),
+                            color:changeColor(leftBackground,bsdWarningL),
                           )
                       ),
                       SizedBox(
@@ -303,7 +312,7 @@ class _HomePageState extends State<HomePage> {
                       Flexible(
                           flex:1,
                           child:Container(
-                            color:changeColor(rightBackground),
+                            color:changeColor(rightBackground,bsdWarningR),
                           )
                       ),
                     ],
@@ -339,7 +348,7 @@ class _HomePageState extends State<HomePage> {
                     child: Container( //文字
                       alignment: Alignment.center,
                       width: 100,
-                      child: Text(/*mySpeed*/'38.075',style: TextStyle(
+                      child: Text(mySpeed/*'38.075'*/,style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                       ),),
@@ -362,7 +371,7 @@ class _HomePageState extends State<HomePage> {
                         alignment: Alignment.centerLeft,
                         width: 100,
                         height: 50,
-                        child: Text(/*longitude*/'2342.19442'),
+                        child: Text(longitude/*'2342.1'+longitude*/),//9422
                       ),
                     ],
                   ),
@@ -383,7 +392,7 @@ class _HomePageState extends State<HomePage> {
                         alignment: Alignment.centerLeft,
                         width: 100,
                         height: 50,
-                        child: Text(/*latitude*/'12025.82153'),
+                        child: Text(latitude/*'12025.'+latitude*/),//82153
                       ),
                     ],
                   ),
@@ -1050,6 +1059,9 @@ class _HomePageState extends State<HomePage> {
           dataIndex = 23;
           print('Speed, Index = ' + dataIndex.toString());
           break;
+        case 88:
+          dataIndex = 24;
+          break;
       }
 
       //buffer資料寫入
@@ -1284,6 +1296,15 @@ class _HomePageState extends State<HomePage> {
             }
           }
           break;
+        case 24:
+          if(byte>=46 && byte<=57){
+            if(!btSysDone) btSysBuffer.add(byte);
+          }else if(byte==13 || byte==10){
+            if(!btSysDone){
+              btSysDone = true;
+            }
+          }
+          break;
       }
     });
 
@@ -1325,10 +1346,9 @@ class _HomePageState extends State<HomePage> {
     }
     if(btWarningDone && !btWarningToStatus){
       setState(() {
-        sysRunLight = btWarningBuffer[0]==49?true:false; //運行指示燈
-        bsdWarningL = btWarningBuffer[1]==50?2:btWarningBuffer[0]==49?1:0;
-        bsdWarningR = btWarningBuffer[2]==50?2:btWarningBuffer[1]==49?1:0;
-        casWarning = btWarningBuffer[3]==49?true:false;
+        bsdWarningL = btWarningBuffer[0]==50?2:btWarningBuffer[0]==49?1:0;
+        bsdWarningR = btWarningBuffer[1]==50?2:btWarningBuffer[1]==49?1:0;
+        casWarning = btWarningBuffer[2]==49?true:false;
       });
       print('**Warning = ' + bsdWarningL.toString() + '/' + bsdWarningR.toString() + '/' + casWarning.toString() + '(' + btWarningBuffer[0].toString() + '/' + btWarningBuffer[1].toString() + '/' + btWarningBuffer[2].toString() + ')');
     }
@@ -1541,6 +1561,11 @@ class _HomePageState extends State<HomePage> {
       });
       print('**speed = ' + mySpeed + ' (' + mySpeedd.toString() + ')');
     }
+    if(btSysDone && !btSysToStauts){
+      setState(() {
+        sysRunLight = btSysBuffer[0]==49?true:false; //運行指示燈
+      });
+    }
   }
 
   void _resetBTinfo(){
@@ -1635,6 +1660,10 @@ class _HomePageState extends State<HomePage> {
     mySpeedBuffer.clear();
     mySpeedDone = false;
     mySpeedToString = false;
+
+    btSysBuffer.clear();
+    btSysDone = false;
+    btSysToStauts = false;
 
     print("reset btBuffer");
   }
